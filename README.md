@@ -1,4 +1,4 @@
-# Steam Deck HQ Decky Plugin
+# Steam Deck HQ Plugin for Decky Loader
 
 TBD.
 
