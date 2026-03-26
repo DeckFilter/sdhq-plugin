@@ -1,5 +1,5 @@
 {
-	"name": "sdhq",
+	"name": "sdhq-plugin",
 	"version": "1.0",
 	"description": "A plugin for browsing Steam Deck HQ content",
 	"type": "module",
@@ -20,7 +20,7 @@
 		"steam-deck",
 		"deck"
 	],
-	"author": "davocarli <davocarli@gmail.com>",
+	"author": "davocarli, felixhirschfeld",
 	"license": "BSD-3-Clause",
 	"bugs": {
 		"url": "https://github.com/felixhirschfeld/sdhq-plugin/issues"

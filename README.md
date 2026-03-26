@@ -1,6 +1,8 @@
 # Steam Deck HQ Plugin for Decky Loader
 
-TBD.
+Official plugin from Steam Deck HQ. Allows you to browse game reviews and recommended settings.
+
+![Steam Deck HQ screenshot](https://github.com/davocarli/sdhq-plugin/blob/main/assets/main-screenshot.jpg?raw=true)
 
 ## Installation
 
