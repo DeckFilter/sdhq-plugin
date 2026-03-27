@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import ssl
@@ -36,44 +38,65 @@ def _extract_app_id(url: str) -> str | None:
 
 
 class Plugin:
+    def __init__(self):
+        self._last_request_errors: dict[str, str] = {}
+
     async def _main(self):
         decky.logger.info("Steam Deck HQ plugin loaded")
 
     async def _unload(self):
         decky.logger.info("Steam Deck HQ plugin unloaded")
 
-    async def _fetch_json(self, url: str):
+    def _clear_request_error(self, request_name: str):
+        self._last_request_errors.pop(request_name, None)
+
+    def _set_request_error(self, request_name: str, err: Exception):
+        if isinstance(err, HTTPError):
+            detail = f"HTTP {err.code}: {err.reason}"
+        else:
+            detail = f"{type(err).__name__}: {err}"
+
+        self._last_request_errors[request_name] = detail
+        decky.logger.error(f"Request {request_name} failed: {detail}")
+
+    async def _fetch_json(self, request_name: str, url: str):
         try:
-            return await asyncio.to_thread(_request_json, url)
+            response = await asyncio.to_thread(_request_json, url)
+            self._clear_request_error(request_name)
+            return response
         except (HTTPError, URLError, TimeoutError, JSONDecodeError) as err:
-            decky.logger.error(f"Request failed for {url}: {err}")
+            self._set_request_error(request_name, err)
             return None
         except Exception as err:
+            self._set_request_error(request_name, err)
             decky.logger.error(
                 f"Unexpected error while requesting {url}: {err}", exc_info=True
             )
             return None
 
     async def get_news(self):
-        posts = await self._fetch_json(POSTS_URL)
+        posts = await self._fetch_json("news", POSTS_URL)
         return posts if isinstance(posts, list) else []
 
     async def get_latest_reviews(self):
-        reviews = await self._fetch_json(REVIEWS_URL)
+        reviews = await self._fetch_json("latest_reviews", REVIEWS_URL)
         return reviews if isinstance(reviews, list) else []
 
     async def get_review_for_app(self, app_id: str):
         if not app_id:
+            self._clear_request_error("review_for_app")
             return None
 
-        reviews = await self._fetch_json(SETTINGS_URL.format(appid=app_id))
+        reviews = await self._fetch_json(
+            "review_for_app", SETTINGS_URL.format(appid=app_id)
+        )
         if isinstance(reviews, list) and reviews:
             return reviews[0]
 
         return None
 
     async def get_store_app_id(self):
-        tabs = await self._fetch_json(STORE_TABS_URL)
+        tabs = await self._fetch_json("store_app_id", STORE_TABS_URL)
         if not isinstance(tabs, list):
             return None
 
@@ -90,3 +113,6 @@ class Plugin:
                 return app_id
 
         return None
+
+    async def get_last_request_errors(self):
+        return dict(self._last_request_errors)

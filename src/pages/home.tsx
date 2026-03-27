@@ -11,19 +11,27 @@ import logo from "../../assets/sdhq-logo.png"
 import { GameReview, NewsItem } from "../sdhq-types"
 
 type HomePageProps = {
+	appError: string | null
+	appIsActive: boolean
+	latestReviewsError: string | null
+	newsError: string | null
 	review: GameReview | null | undefined
+	reviewError: string | null
 	newsItems: NewsItem[]
 	setPage: (page: "home" | "review") => void
 	reviewItems: GameReview[] | null
-	appIsActive: boolean
 }
 
 export const HomePage = ({
+	appError,
+	appIsActive,
+	latestReviewsError,
+	newsError,
 	review,
+	reviewError,
 	newsItems,
 	setPage,
 	reviewItems,
-	appIsActive,
 }: HomePageProps) => (
 	<>
 		<>
@@ -40,16 +48,18 @@ export const HomePage = ({
 			{appIsActive ? (
 				<PanelSection
 					title={
-						review
-							? review.title.rendered
-							: "Loading Current Game..."
+						review ? review.title.rendered : "Current Game"
 					}
 				>
-					{!review ? (
+					{appError ? (
+						<span>Failed to resolve the current game: {appError}</span>
+					) : !review ? (
 						<span>
-							{review === null
-								? "No SDHQ Review For Current Game"
-								: "Loading..."}
+							{reviewError
+								? `Failed to load the current game review: ${reviewError}`
+								: review === null
+									? "No SDHQ Review For Current Game"
+									: "Loading..."}
 						</span>
 					) : (
 						<div>
@@ -94,6 +104,17 @@ export const HomePage = ({
 							</ButtonItem>
 						))}
 					</>
+				) : latestReviewsError ? (
+					<PanelSectionRow>
+						<i>Failed to load reviews: {latestReviewsError}</i>
+					</PanelSectionRow>
+				) : null}
+				{reviewItems !== null &&
+				reviewItems.length === 0 &&
+				latestReviewsError ? (
+					<PanelSectionRow>
+						<i>Failed to load reviews: {latestReviewsError}</i>
+					</PanelSectionRow>
 				) : null}
 				<ButtonItem
 					layout="below"
@@ -108,7 +129,11 @@ export const HomePage = ({
 			</PanelSection>
 
 			<PanelSection title="Latest News">
-				{newsItems.length === 0 ? (
+				{newsItems.length === 0 && newsError ? (
+					<PanelSectionRow>
+						<i>Failed to load news: {newsError}</i>
+					</PanelSectionRow>
+				) : newsItems.length === 0 ? (
 					<PanelSectionRow>
 						<i>Loading...</i>
 					</PanelSectionRow>
