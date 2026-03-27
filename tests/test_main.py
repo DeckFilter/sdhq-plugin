@@ -1,3 +1,4 @@
+import io
 import importlib.util
 import sys
 import types
@@ -61,6 +62,44 @@ class PluginRequestErrorTests(unittest.IsolatedAsyncioTestCase):
             module._request_json = original_request_json
 
         self.assertNotIn("news", errors)
+
+
+class RequestContextTests(unittest.TestCase):
+    def test_https_requests_use_certifi_bundle(self):
+        module = load_plugin_module()
+        cafiles = []
+
+        class FakeResponse(io.StringIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        def fake_create_default_context(*, cafile=None):
+            cafiles.append(cafile)
+            return object()
+
+        def fake_urlopen(request, context=None, timeout=None):
+            return FakeResponse("[]")
+
+        original_create_default_context = module.ssl.create_default_context
+        original_urlopen = module.urllib.request.urlopen
+        original_certifi = getattr(module, "certifi", None)
+        module.ssl.create_default_context = fake_create_default_context
+        module.urllib.request.urlopen = fake_urlopen
+        module.certifi = types.SimpleNamespace(where=lambda: "/tmp/certifi.pem")
+        try:
+            module._request_json("https://steamdeckhq.com/wp-json/wp/v2/posts")
+        finally:
+            module.ssl.create_default_context = original_create_default_context
+            module.urllib.request.urlopen = original_urlopen
+            if original_certifi is None:
+                delattr(module, "certifi")
+            else:
+                module.certifi = original_certifi
+
+        self.assertEqual(cafiles, ["/tmp/certifi.pem"])
 
 
 if __name__ == "__main__":

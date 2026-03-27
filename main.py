@@ -9,6 +9,11 @@ from urllib.error import HTTPError, URLError
 
 import decky
 
+try:
+    import certifi
+except Exception:
+    certifi = None
+
 POSTS_URL = "https://steamdeckhq.com/wp-json/wp/v2/posts?per_page=3"
 SETTINGS_URL = (
     "https://steamdeckhq.com/wp-json/wp/v2/game-reviews/"
@@ -19,9 +24,16 @@ STORE_TABS_URL = "http://localhost:8080/json"
 USER_AGENT = "SteamDeckHQDeckyPlugin/1.0"
 
 
+def _create_ssl_context():
+    if certifi is not None:
+        return ssl.create_default_context(cafile=certifi.where())
+
+    return ssl.create_default_context()
+
+
 def _request_json(url: str):
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    context = ssl.create_default_context() if url.startswith("https://") else None
+    context = _create_ssl_context() if url.startswith("https://") else None
 
     with urllib.request.urlopen(request, context=context, timeout=10) as response:
         return json.load(response)
