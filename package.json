@@ -30,7 +30,7 @@
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.11.2",
     "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
+    "@types/react-dom": "19.2.7",
     "@types/webpack": "^5.28.5",
     "rollup": "^4.59.1",
     "typescript": "^5.9.3"
