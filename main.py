@@ -31,12 +31,15 @@ def _create_ssl_context():
     return ssl.create_default_context()
 
 
-def _request_json(url: str):
+def _request_json(url: str, include_total_pages: bool = False):
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     context = _create_ssl_context() if url.startswith("https://") else None
 
     with urllib.request.urlopen(request, context=context, timeout=10) as response:
-        return json.load(response)
+        data = json.load(response)
+        if include_total_pages:
+            return data, response.headers.get("X-WP-TotalPages")
+        return data
 
 
 def _build_page_url(base_url: str, page: int, per_page: int) -> str:
@@ -160,6 +163,49 @@ class Plugin:
             "latest_reviews", _build_page_url(REVIEWS_API_URL, 1, 3)
         )
         return reviews if isinstance(reviews, list) else []
+
+    async def get_article_page(self, kind: str, page: int):
+        if kind not in ("news", "review") or type(page) is not int or page < 1:
+            return {"articles": [], "hasMore": False, "error": "Invalid article page"}
+
+        request_name = f"{kind}_page"
+        base_url = POSTS_API_URL if kind == "news" else REVIEWS_API_URL
+        try:
+            articles, total_pages_header = await asyncio.to_thread(
+                _request_json, _build_page_url(base_url, page, 3), True
+            )
+            if not isinstance(articles, list) or any(
+                not isinstance(article, dict) for article in articles
+            ):
+                raise ValueError("Unexpected article page response")
+            try:
+                total_pages = int(total_pages_header)
+            except (TypeError, ValueError):
+                total_pages = -1
+            has_more = bool(articles) and (
+                page < total_pages if total_pages >= 0 else len(articles) == 3
+            )
+            self._clear_request_error(request_name)
+            return {
+                "articles": [_prepare_article(article) for article in articles],
+                "hasMore": has_more,
+                "error": None,
+            }
+        except Exception as err:
+            if isinstance(err, HTTPError) and err.code == 400:
+                try:
+                    detail = json.load(err)
+                except (ValueError, UnicodeError, OSError):
+                    detail = None
+                if isinstance(detail, dict) and detail.get("code") == "rest_post_invalid_page_number":
+                    self._clear_request_error(request_name)
+                    return {"articles": [], "hasMore": False, "error": None}
+            self._set_request_error(request_name, err)
+            return {
+                "articles": [],
+                "hasMore": True,
+                "error": self._last_request_errors[request_name],
+            }
 
     async def get_news_article(self, article_id: int):
         article = await self._fetch_article_json(

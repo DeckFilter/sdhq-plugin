@@ -1,12 +1,16 @@
 import { callable } from "@decky/api";
 
 import { GameReview, NewsItem } from "./types/sdhq-types";
+import type { ArticleKind } from "./types/article-types";
+import type { ArticlePageResult } from "./types/article-feed";
 import type { RequestErrors } from "./load-data";
 
 const getNewsArticleCall =
   callable<[articleId: number], NewsItem | null>("get_news_article");
 const getReviewArticleCall =
   callable<[articleId: number], GameReview | null>("get_review_article");
+const getArticlePageCall =
+  callable<[kind: ArticleKind, page: number], ArticlePageResult>("get_article_page");
 const getNewsCall = callable<[], NewsItem[]>("get_news");
 const getLatestReviewsCall = callable<[], GameReview[]>("get_latest_reviews");
 const getReviewForAppCall = callable<[appId: string], GameReview | null>(
@@ -28,6 +32,9 @@ export const getNewsArticle = async (articleId: number) =>
 
 export const getReviewArticle = async (articleId: number) =>
   getReviewArticleCall(articleId);
+
+export const getArticlePage = async (kind: ArticleKind, page: number) =>
+  getArticlePageCall(kind, page);
 
 export const getStoreAppId = async () => getStoreAppIdCall();
 

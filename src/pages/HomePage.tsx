@@ -96,8 +96,7 @@ export const HomePage = () => {
       return;
     }
 
-    const reviews = [review, ...(latestReviews ?? []).filter((item) => item.id !== review.id)];
-    openArticleDialog("review", review.id, reviews.map(normalizeReviewArticle));
+    openArticleDialog("review", review.id, [normalizeReviewArticle(review)]);
   };
 
   return (
@@ -158,7 +157,7 @@ export const HomePage = () => {
             <PanelSectionRow key={gameReview.id}>
               <ButtonItem
                 layout="below"
-                onClick={() => openArticleDialog("review", gameReview.id, latestReviews.map(normalizeReviewArticle))}
+                onClick={() => openArticleDialog("review", gameReview.id, latestReviews.map(normalizeReviewArticle), { browse: true })}
               >
                 {gameReview.title.rendered}
               </ButtonItem>
@@ -202,7 +201,7 @@ export const HomePage = () => {
           <PanelSectionRow key={news.id}>
             <ButtonItem
               layout="below"
-              onClick={() => openArticleDialog("news", news.id, newsItems?.map(normalizeNewsArticle))}
+              onClick={() => openArticleDialog("news", news.id, newsItems?.map(normalizeNewsArticle), { browse: true })}
             >
               {news.title.rendered}
             </ButtonItem>

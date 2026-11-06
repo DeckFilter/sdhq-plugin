@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { ArticleDetail, ArticleKind } from "./types/article-types";
+import type { ArticleDetail, ArticleDialogOptions, ArticleKind } from "./types/article-types";
 
 type ShowModalProps = {
   bHideMainWindowForPopouts?: boolean;
@@ -19,7 +19,7 @@ type ShowModalFn = (
 ) => ShowModalResult;
 
 type CreateOpenArticleDialogDeps = {
-  buildDialog: (kind: ArticleKind, articleId: number, articles?: readonly ArticleDetail[]) => ReactNode;
+  buildDialog: (kind: ArticleKind, articleId: number, articles?: readonly ArticleDetail[], options?: ArticleDialogOptions) => ReactNode;
   parent?: EventTarget;
   showModal: ShowModalFn;
 };
@@ -29,8 +29,8 @@ export const createOpenArticleDialog = ({
   parent,
   showModal,
 }: CreateOpenArticleDialogDeps) => {
-  return (kind: ArticleKind, articleId: number, articles?: readonly ArticleDetail[]) =>
-    showModal(buildDialog(kind, articleId, articles), parent, {
+  return (kind: ArticleKind, articleId: number, articles?: readonly ArticleDetail[], options?: ArticleDialogOptions) =>
+    showModal(buildDialog(kind, articleId, articles, options), parent, {
       bHideMainWindowForPopouts: false,
       strTitle: "Steam Deck HQ",
     });

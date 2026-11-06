@@ -1,5 +1,6 @@
 import {
   Carousel,
+  DialogButton,
   Focusable,
   GamepadButton,
   ScrollPanel,
@@ -25,8 +26,9 @@ import {
 } from "react";
 
 import { createOpenArticleDialog } from "../article-dialog-opener";
+import { useArticleFeed } from "../article-feed";
 import { articleClasses, articleStyles } from "../article-styles";
-import type { ArticleDetail, ArticleKind } from "../types/article-types";
+import type { ArticleDetail, ArticleDialogOptions, ArticleKind } from "../types/article-types";
 import { ArticleBlocks } from "./ArticleBlocks.js";
 import { useArticleImageSource } from "./ArticleImage";
 import { loadArticleData } from "../load-data.js";
@@ -76,6 +78,11 @@ const ArticleFocusable = findModuleExport((value) => {
 }>;
 
 const keepArticleInPlace = () => true;
+
+const ArticleCarousel = Carousel as ComponentType<ComponentProps<typeof Carousel> & {
+  fnOnFocusedColumnChange?: (previousColumn: number | undefined, nextColumn: number) => void;
+  fnOnScroll?: (scrollLeft: number) => void;
+}>;
 
 const ArticleScrollPanel = (props: ScrollProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -167,6 +174,7 @@ type ArticleDialogProps = {
   closeModal?: () => void;
   kind: ArticleKind;
   articles?: readonly ArticleDetail[];
+  options?: ArticleDialogOptions;
 };
 
 const getViewport = () => {
@@ -174,19 +182,27 @@ const getViewport = () => {
   return { width: steamWindow.innerWidth, height: Math.max(160, steamWindow.innerHeight - 40) };
 };
 
-export const ArticleDialog = ({ articleId, closeModal, kind, articles = [] }: ArticleDialogProps) => {
+export const ArticleDialog = ({ articleId, closeModal, kind, articles = [], options }: ArticleDialogProps) => {
   const carouselName = `Steam Deck HQ articles ${useId()}`;
   const [viewport, setViewport] = useState(getViewport);
   const innerRef = useRef<HTMLDivElement>(null);
-  const selectedIndex = articles.findIndex((article) => article.id === articleId && article.kind === kind);
-  const items = selectedIndex >= 0
-    ? articles.map((article) => ({ id: article.id, kind: article.kind, article }))
-    : [{ id: articleId, kind, article: undefined }];
+  const { items, activeIndex, initialIndex, setActiveIndex, setPrefetchIndex, hasMore, loading, error, loadNext } =
+    useArticleFeed(kind, articleId, articles, options?.browse ?? false);
+  const showFeedCard = (options?.browse ?? false) && (hasMore || activeIndex >= items.length);
+  const lastColumn = items.length + Number(showFeedCard);
   const columnWidth = viewport.width * .8;
   const edgePadding = (viewport.width - columnWidth) / 2;
   const getColumnWidth = useCallback((index: number) => (
-    columnWidth + (index === items.length ? edgePadding : 0)
-  ), [columnWidth, edgePadding, items.length]);
+    columnWidth + (index === lastColumn ? edgePadding : 0)
+  ), [columnWidth, edgePadding, lastColumn]);
+  const onFocusedColumnChange = useCallback((_previousColumn: number | undefined, nextColumn: number) => {
+    setActiveIndex(Math.max(0, nextColumn - 1));
+  }, [setActiveIndex]);
+  const onCarouselScroll = useCallback((scrollLeft: number) => {
+    if (Number.isFinite(scrollLeft)) {
+      setPrefetchIndex(Math.max(0, Math.min(items.length, Math.floor(scrollLeft / columnWidth))));
+    }
+  }, [columnWidth, items.length, setPrefetchIndex]);
 
   useLayoutEffect(() => {
     const inner = innerRef.current;
@@ -216,23 +232,37 @@ export const ArticleDialog = ({ articleId, closeModal, kind, articles = [] }: Ar
       <style>{articleStyles}</style>
       <div className={articleClasses.inner} ref={innerRef}>
       <div className={articleClasses.pageable}>
-      <Carousel className={articleClasses.carousel} name={carouselName} nNumItems={items.length + 1}
-        initialColumn={Math.max(0, selectedIndex) + 1} nIndexLeftmost={1}
+      <ArticleCarousel className={articleClasses.carousel} name={carouselName} nNumItems={lastColumn + 1}
+        initialColumn={initialIndex + 1} nIndexLeftmost={1}
         autoFocus enableBumperPaging scrollToAlignment="center"
         nHeight={carouselHeight} nItemHeight={carouselHeight} nItemMarginX={0}
         fnGetColumnWidth={getColumnWidth} fnGetId={(index) => index}
+        fnOnFocusedColumnChange={onFocusedColumnChange}
+        fnOnScroll={onCarouselScroll}
         fnDoesItemTakeFocus={(index) => index > 0}
         fnItemRenderer={(index) => {
           const item = items[index - 1];
-          if (!item) return null;
+          const isFeedCard = showFeedCard && index === items.length + 1;
+          if (!item && !isFeedCard) return null;
           return (
             <Focusable className={articleClasses.container} style={{ width: columnWidth, height: carouselHeight }}
               onGamepadDirection={(event) => event.detail.button === GamepadButton.DIR_UP || event.detail.button === GamepadButton.DIR_DOWN}>
             <ArticleScrollPanel className={`${articleClasses.scroll} sdhq-article-scroll`} style={{ width: columnWidth, height: carouselHeight }}
-              scrollDirection="y" aria-label={item.article?.title ?? "Article"}>
+              scrollDirection="y" aria-label={item?.article?.title ?? "Article"}>
               <ArticleFocusable className={`${articleClasses.focus} sdhq-article-focus`} focusable noFocusRing
                 onOKActionDescription="Select" fnScrollIntoViewHandler={keepArticleInPlace}>
-                <ArticleCard articleId={item.id} kind={item.kind} initialArticle={item.article} closeModal={closeModal} />
+                {item ? (
+                  <ArticleCard articleId={item.id} kind={item.kind} initialArticle={item.article} closeModal={closeModal} />
+                ) : (
+                  <article className={`${articleClasses.card} sdhq-article-card`}>
+                    <div className="sdhq-article-body" role={error ? "alert" : "status"}>
+                      {error ? <>
+                        <p>Couldn’t load more articles.</p>
+                        <DialogButton onClick={() => void loadNext()}>Retry</DialogButton>
+                      </> : hasMore || loading ? <><Spinner />Loading articles…</> : "No more articles."}
+                    </div>
+                  </article>
+                )}
               </ArticleFocusable>
             </ArticleScrollPanel>
             </Focusable>
@@ -246,8 +276,8 @@ export const ArticleDialog = ({ articleId, closeModal, kind, articles = [] }: Ar
 };
 
 export const openArticleDialog = createOpenArticleDialog({
-  buildDialog: (kind, articleId, articles) => (
-    <ArticleDialog articleId={articleId} kind={kind} articles={articles} />
+  buildDialog: (kind, articleId, articles, options) => (
+    <ArticleDialog articleId={articleId} kind={kind} articles={articles} options={options} />
   ),
   showModal,
 });

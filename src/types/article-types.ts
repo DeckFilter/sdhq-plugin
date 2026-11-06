@@ -1,5 +1,9 @@
 export type ArticleKind = "review" | "news";
 
+export type ArticleDialogOptions = {
+  browse?: boolean;
+};
+
 export type ArticleSummary = {
   id: number;
   kind: ArticleKind;
