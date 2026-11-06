@@ -20,7 +20,7 @@
     "steam-deck",
     "deck"
   ],
-  "author": "davocarli, felixhirschfeld",
+  "author": "DeckFilter, davocarli",
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/DeckFilter/sdhq-plugin/issues"
@@ -28,7 +28,7 @@
   "homepage": "https://github.com/DeckFilter/sdhq-plugin#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
-    "@decky/ui": "^4.11.2",
+    "@decky/ui": "^4.16.5",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/webpack": "^5.28.5",

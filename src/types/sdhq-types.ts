@@ -84,6 +84,27 @@ export type NewsItem = {
 	}
 }
 
+export type ReviewSteamSettings = {
+	fps_cap?: string
+	fps_refresh_rate?: number | string | null
+	half_rate_shading?: boolean
+	tdp_limit?: string
+	scaling_filter?: string
+	gpu_clock_frequency?: string
+}
+
+export type ReviewSettingsPreset = ReviewSteamSettings & {
+	device?: string
+	title?: string
+	proton_version?: string
+	game_settings?: string
+	projected_battery_usage_and_temperature?: {
+		wattage?: string
+		temperatures?: string
+		gameplay_time?: string
+	} | null
+}
+
 export type GameReview = {
 	id: number
 	date: string
@@ -116,27 +137,14 @@ export type GameReview = {
 	categories: string[]
 	genre: string[]
 	acf: {
-		best_on_deck: boolean
+		best_on_deck?: boolean
 		is_first_look: boolean
 		last_revised_date: string | null
-		optimized_and_recommended_settings: {
-			steamos_settings: {
-				fps_cap: string
-				fps_refresh_rate: number
-				half_rate_shading: boolean
-				tdp_limit: string
-				scaling_filter: string
-				gpu_clock_frequency: string
-			}
-			proton_version: string
-			game_settings: string
-			projected_battery_usage_and_temperature: {
-				wattage: string
-				temperatures: string
-				gameplay_time: string
-			}
-		}
-		sdhq_rating: number
+		optimized_and_recommended_settings?: Pick<ReviewSettingsPreset,
+			"proton_version" | "game_settings" | "projected_battery_usage_and_temperature"
+		> & { steamos_settings?: ReviewSteamSettings | null } | null
+		steamos_settings?: { steamos_setting?: ReviewSettingsPreset | null }[] | null
+		sdhq_rating?: number | string | null
 		sdhq_rating_tags: { sdhq_rating_tag: string }[]
 		sdhq_rating_categories: {
 			performance: number
@@ -151,9 +159,9 @@ export type GameReview = {
 			proton_db_rating: string
 		}
 		deck_builds: string | null
-		links: {
-			steam_store_url: string
-			protondb_url: string
+		links?: {
+			steam_store_url?: string
+			protondb_url?: string
 		}
 		"": {
 			game_logo: number

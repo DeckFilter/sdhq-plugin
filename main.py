@@ -14,12 +14,12 @@ try:
 except Exception:
     certifi = None
 
-POSTS_URL = "https://steamdeckhq.com/wp-json/wp/v2/posts?per_page=3"
+POSTS_API_URL = "https://steamdeckhq.com/wp-json/wp/v2/posts"
 SETTINGS_URL = (
     "https://steamdeckhq.com/wp-json/wp/v2/game-reviews/"
-    "?meta_key=steam_app_id&meta_value={appid}"
+    "?meta_key=steam_app_id&meta_value={appid}&_embed=wp:featuredmedia"
 )
-REVIEWS_URL = "https://steamdeckhq.com/wp-json/wp/v2/game-reviews/?per_page=3"
+REVIEWS_API_URL = "https://steamdeckhq.com/wp-json/wp/v2/game-reviews/"
 STORE_TABS_URL = "http://localhost:8080/json"
 USER_AGENT = "SteamDeckHQDeckyPlugin/1.0"
 
@@ -37,6 +37,65 @@ def _request_json(url: str):
 
     with urllib.request.urlopen(request, context=context, timeout=10) as response:
         return json.load(response)
+
+
+def _build_page_url(base_url: str, page: int, per_page: int) -> str:
+    safe_page = max(1, int(page))
+    safe_per_page = max(1, int(per_page))
+    return (
+        f"{base_url}?page={safe_page}&per_page={safe_per_page}"
+        "&_embed=wp:featuredmedia"
+    )
+
+
+def _build_item_url(base_url: str, item_id: int) -> str:
+    safe_item_id = int(item_id)
+    return f"{base_url.rstrip('/')}/{safe_item_id}?_embed=wp:featuredmedia"
+
+
+def _prepare_article(article):
+    if not isinstance(article, dict):
+        return article
+
+    embedded = article.pop("_embedded", None)
+    media_items = embedded.get("wp:featuredmedia") if isinstance(embedded, dict) else None
+    if not isinstance(media_items, list):
+        return article
+
+    for media in media_items:
+        if not isinstance(media, dict):
+            continue
+        details = media.get("media_details")
+        if not isinstance(details, dict):
+            continue
+        source = media.get("source_url")
+        width = details.get("width")
+        if (
+            isinstance(source, str) and source
+            and isinstance(width, (int, float)) and not isinstance(width, bool)
+            and 0 < width <= 2048
+        ):
+            article["featured_img"] = source
+            return article
+
+        sizes = details.get("sizes")
+        candidates = []
+        for size in sizes.values() if isinstance(sizes, dict) else ():
+            if not isinstance(size, dict):
+                continue
+            source = size.get("source_url")
+            width = size.get("width")
+            if (
+                isinstance(source, str) and source
+                and isinstance(width, (int, float)) and not isinstance(width, bool)
+                and 0 < width <= 1280
+            ):
+                candidates.append((width, source))
+        if candidates:
+            article["featured_img"] = max(candidates, key=lambda item: item[0])[1]
+            return article
+
+    return article
 
 
 def _extract_app_id(url: str) -> str | None:
@@ -86,20 +145,40 @@ class Plugin:
             )
             return None
 
+    async def _fetch_article_json(self, request_name: str, url: str):
+        response = await self._fetch_json(request_name, url)
+        if isinstance(response, list):
+            return [_prepare_article(article) for article in response]
+        return _prepare_article(response)
+
     async def get_news(self):
-        posts = await self._fetch_json("news", POSTS_URL)
+        posts = await self._fetch_article_json("news", _build_page_url(POSTS_API_URL, 1, 3))
         return posts if isinstance(posts, list) else []
 
     async def get_latest_reviews(self):
-        reviews = await self._fetch_json("latest_reviews", REVIEWS_URL)
+        reviews = await self._fetch_article_json(
+            "latest_reviews", _build_page_url(REVIEWS_API_URL, 1, 3)
+        )
         return reviews if isinstance(reviews, list) else []
+
+    async def get_news_article(self, article_id: int):
+        article = await self._fetch_article_json(
+            "news_article", _build_item_url(POSTS_API_URL, article_id)
+        )
+        return article if isinstance(article, dict) else None
+
+    async def get_review_article(self, article_id: int):
+        article = await self._fetch_article_json(
+            "review_article", _build_item_url(REVIEWS_API_URL, article_id)
+        )
+        return article if isinstance(article, dict) else None
 
     async def get_review_for_app(self, app_id: str):
         if not app_id:
             self._clear_request_error("review_for_app")
             return None
 
-        reviews = await self._fetch_json(
+        reviews = await self._fetch_article_json(
             "review_for_app", SETTINGS_URL.format(appid=app_id)
         )
         if isinstance(reviews, list) and reviews:

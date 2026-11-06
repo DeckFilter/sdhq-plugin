@@ -1,7 +1,20 @@
-import type { GameReview, NewsItem } from "./sdhq-types";
+import type { GameReview, NewsItem } from "./types/sdhq-types";
+import type { ArticleDetail, ArticleKind } from "./types/article-types";
+import {
+  normalizeNewsArticle,
+  normalizeReviewArticle,
+} from "./article-normalizer";
 
 export type RequestErrors = Partial<
-  Record<"latest_reviews" | "news" | "review_for_app" | "store_app_id", string>
+  Record<
+    | "latest_reviews"
+    | "news"
+    | "review_for_app"
+    | "store_app_id"
+    | "review_article"
+    | "news_article",
+    string
+  >
 >;
 
 type HomeLoadDeps = {
@@ -28,6 +41,17 @@ export type HomeData = {
 export type ReviewData = {
   review: GameReview | null;
   reviewError: string | null;
+};
+
+type ArticleLoadDeps = {
+  getLastRequestErrors: () => Promise<RequestErrors>;
+  getNewsArticle: (id: number) => Promise<NewsItem | null>;
+  getReviewArticle: (id: number) => Promise<GameReview | null>;
+};
+
+export type ArticleData = {
+  article: ArticleDetail | null;
+  error: string | null;
 };
 
 const formatError = (error: unknown): string =>
@@ -70,6 +94,37 @@ export const loadHomeData = async ({
         : requestErrors.news ?? null,
     newsItems: newsResult.status === "fulfilled" ? newsResult.value : [],
   };
+};
+
+export const loadArticleData = async (
+  kind: ArticleKind,
+  articleId: number,
+  { getLastRequestErrors, getNewsArticle, getReviewArticle }: ArticleLoadDeps,
+): Promise<ArticleData> => {
+  const requestErrors: RequestErrors = await getLastRequestErrors().catch(
+    () => ({} as RequestErrors),
+  );
+
+  try {
+    if (kind === "review") {
+      const review = await getReviewArticle(articleId);
+      return {
+        article: review ? normalizeReviewArticle(review) : null,
+        error: requestErrors.review_article ?? null,
+      };
+    }
+
+    const news = await getNewsArticle(articleId);
+    return {
+      article: news ? normalizeNewsArticle(news) : null,
+      error: requestErrors.news_article ?? null,
+    };
+  } catch (error: unknown) {
+    return {
+      article: null,
+      error: formatError(error),
+    };
+  }
 };
 
 export const loadReviewData = async (
