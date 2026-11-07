@@ -1,0 +1,58 @@
+name: Build SDHQ
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Package build artifacts
+        run: |
+          rm -f sdhq-plugin.tar.gz sdhq-plugin.zip
+          stage_dir="$(mktemp -d)"
+          mkdir -p "${stage_dir}/sdhq-plugin"
+
+          cp -R dist "${stage_dir}/sdhq-plugin/"
+          cp main.py package.json plugin.json README.md LICENSE "${stage_dir}/sdhq-plugin/"
+
+          tar -czf sdhq-plugin.tar.gz -C "${stage_dir}" sdhq-plugin
+          (
+            cd "${stage_dir}"
+            zip -rq "${OLDPWD}/sdhq-plugin.zip" sdhq-plugin
+          )
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdhq-plugin
+          path: |
+            sdhq-plugin.zip
+            sdhq-plugin.tar.gz
+          if-no-files-found: error
