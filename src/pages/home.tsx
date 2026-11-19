@@ -51,18 +51,18 @@ export const HomePage = ({
 						review ? review.title.rendered : "Current Game"
 					}
 				>
-					{appError ? (
-						<span>Failed to resolve the current game: {appError}</span>
-					) : !review ? (
-						<span>
-							{reviewError
-								? `Failed to load the current game review: ${reviewError}`
-								: review === null
-									? "No SDHQ Review For Current Game"
-									: "Loading..."}
-						</span>
-					) : (
-						<div>
+					<PanelSectionRow>
+						{appError ? (
+							<span>Failed to resolve the current game: {appError}</span>
+						) : !review ? (
+							<span>
+								{reviewError
+									? `Failed to load the current game review: ${reviewError}`
+									: review === null
+										? "No SDHQ Review For Current Game"
+										: "Loading..."}
+							</span>
+						) : (
 							<ButtonItem
 								layout="below"
 								onClick={() => setPage("review")}
@@ -82,8 +82,8 @@ export const HomePage = ({
 									/>
 								) : null}
 							</ButtonItem>
-						</div>
-					)}
+						)}
+					</PanelSectionRow>
 				</PanelSection>
 			) : null}
 
@@ -91,17 +91,18 @@ export const HomePage = ({
 				{reviewItems !== null ? (
 					<>
 						{reviewItems.map((gameReview) => (
-							<ButtonItem
-								key={gameReview.id}
-								layout="below"
-								onClick={() =>
-									Navigation.NavigateToExternalWeb(
-										gameReview.link
-									)
-								}
-							>
-								{gameReview.title.rendered}
-							</ButtonItem>
+							<PanelSectionRow key={gameReview.id}>
+								<ButtonItem
+									layout="below"
+									onClick={() =>
+										Navigation.NavigateToExternalWeb(
+											gameReview.link
+										)
+									}
+								>
+									{gameReview.title.rendered}
+								</ButtonItem>
+							</PanelSectionRow>
 						))}
 					</>
 				) : latestReviewsError ? (
@@ -116,16 +117,18 @@ export const HomePage = ({
 						<i>Failed to load reviews: {latestReviewsError}</i>
 					</PanelSectionRow>
 				) : null}
-				<ButtonItem
-					layout="below"
-					onClick={() =>
-						Navigation.NavigateToExternalWeb(
-							"https://steamdeckhq.com/game-settings/"
-						)
-					}
-				>
-					<i>All Reviews...</i>
-				</ButtonItem>
+				<PanelSectionRow>
+					<ButtonItem
+						layout="below"
+						onClick={() =>
+							Navigation.NavigateToExternalWeb(
+								"https://steamdeckhq.com/game-settings/"
+							)
+						}
+					>
+						<i>All Reviews...</i>
+					</ButtonItem>
+				</PanelSectionRow>
 			</PanelSection>
 
 			<PanelSection title="Latest News">
