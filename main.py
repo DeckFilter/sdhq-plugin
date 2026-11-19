@@ -4,6 +4,7 @@ import asyncio
 import json
 import ssl
 import urllib.request
+from html import unescape
 from json import JSONDecodeError
 from urllib.error import HTTPError, URLError
 
@@ -86,26 +87,32 @@ class Plugin:
             )
             return None
 
+    async def _fetch_posts(self, request_name: str, url: str):
+        posts = await self._fetch_json(request_name, url)
+        if not isinstance(posts, list):
+            return []
+
+        for post in posts:
+            title = post.get("title") if isinstance(post, dict) else None
+            if isinstance(title, dict) and isinstance(title.get("rendered"), str):
+                title["rendered"] = unescape(title["rendered"])
+        return posts
+
     async def get_news(self):
-        posts = await self._fetch_json("news", POSTS_URL)
-        return posts if isinstance(posts, list) else []
+        return await self._fetch_posts("news", POSTS_URL)
 
     async def get_latest_reviews(self):
-        reviews = await self._fetch_json("latest_reviews", REVIEWS_URL)
-        return reviews if isinstance(reviews, list) else []
+        return await self._fetch_posts("latest_reviews", REVIEWS_URL)
 
     async def get_review_for_app(self, app_id: str):
         if not app_id:
             self._clear_request_error("review_for_app")
             return None
 
-        reviews = await self._fetch_json(
+        reviews = await self._fetch_posts(
             "review_for_app", SETTINGS_URL.format(appid=app_id)
         )
-        if isinstance(reviews, list) and reviews:
-            return reviews[0]
-
-        return None
+        return reviews[0] if reviews else None
 
     async def get_store_app_id(self):
         tabs = await self._fetch_json("store_app_id", STORE_TABS_URL)
