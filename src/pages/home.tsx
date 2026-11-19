@@ -1,13 +1,12 @@
 import {
 	ButtonItem,
-	Focusable,
 	Navigation,
 	PanelSection,
 	PanelSectionRow
 } from "@decky/ui"
 
 import badge from "../../assets/bestOnDeck-badge.png"
-import logo from "../../assets/sdhq-logo.png"
+import { SteamDeckHQLogo } from "../components/SteamDeckHQLogo"
 import { GameReview, NewsItem } from "../sdhq-types"
 
 type HomePageProps = {
@@ -35,16 +34,6 @@ export const HomePage = ({
 }: HomePageProps) => (
 	<>
 		<>
-			<Focusable
-				onClick={() =>
-					Navigation.NavigateToExternalWeb("https://steamdeckhq.com/")
-				}
-			>
-				<div style={{ display: "flex", justifyContent: "center" }}>
-					<img style={{ width: "100%" }} src={logo} />
-				</div>
-			</Focusable>
-
 			{appIsActive ? (
 				<PanelSection
 					title={
@@ -163,6 +152,17 @@ export const HomePage = ({
 						}
 					>
 						<i>View More...</i>
+					</ButtonItem>
+				</PanelSectionRow>
+			</PanelSection>
+
+			<PanelSection>
+				<PanelSectionRow>
+					<ButtonItem
+						layout="below"
+						onClick={() => Navigation.NavigateToExternalWeb("https://steamdeckhq.com/")}
+					>
+						<SteamDeckHQLogo />
 					</ButtonItem>
 				</PanelSectionRow>
 			</PanelSection>
