@@ -13,15 +13,15 @@ import { GameReview, NewsItem } from "../sdhq-types"
 const retainFocus = { focusableIfEmpty: true }
 
 type HomePageProps = {
-	appError: string | null
+	appError?: string
 	appIsActive: boolean
-	latestReviewsError: string | null
-	newsError: string | null
+	latestReviewsError?: string
+	newsError?: string
 	review: GameReview | null | undefined
-	reviewError: string | null
-	newsItems: NewsItem[]
+	reviewError?: string
+	newsItems?: NewsItem[]
 	setPage: (page: "home" | "review") => void
-	reviewItems: GameReview[] | null
+	reviewItems?: GameReview[]
 }
 
 export const HomePage = ({
@@ -82,35 +82,25 @@ export const HomePage = ({
 			) : null}
 
 			<PanelSection title="Latest Reviews">
-				{reviewItems !== null ? (
-					<>
-						{reviewItems.map((gameReview) => (
-							<PanelSectionRow key={gameReview.id}>
-								<ButtonItem
-									layout="below"
-									onClick={() =>
-										Navigation.NavigateToExternalWeb(
-											gameReview.link
-										)
-									}
-								>
-									{gameReview.title.rendered}
-								</ButtonItem>
-							</PanelSectionRow>
-						))}
-					</>
-				) : latestReviewsError ? (
+				{!reviewItems && (
 					<PanelSectionRow>
-						<i>Failed to load reviews: {latestReviewsError}</i>
+						<i>{latestReviewsError ? `Failed to load reviews: ${latestReviewsError}` : "Loading..."}</i>
 					</PanelSectionRow>
-				) : null}
-				{reviewItems !== null &&
-				reviewItems.length === 0 &&
-				latestReviewsError ? (
-					<PanelSectionRow>
-						<i>Failed to load reviews: {latestReviewsError}</i>
+				)}
+				{reviewItems?.map((gameReview) => (
+					<PanelSectionRow key={gameReview.id}>
+						<ButtonItem
+							layout="below"
+							onClick={() =>
+								Navigation.NavigateToExternalWeb(
+									gameReview.link
+								)
+							}
+						>
+							{gameReview.title.rendered}
+						</ButtonItem>
 					</PanelSectionRow>
-				) : null}
+				))}
 				<PanelSectionRow>
 					<ButtonItem
 						layout="below"
@@ -126,16 +116,12 @@ export const HomePage = ({
 			</PanelSection>
 
 			<PanelSection title="Latest News">
-				{newsItems.length === 0 && newsError ? (
+				{!newsItems && (
 					<PanelSectionRow>
-						<i>Failed to load news: {newsError}</i>
+						<i>{newsError ? `Failed to load news: ${newsError}` : "Loading..."}</i>
 					</PanelSectionRow>
-				) : newsItems.length === 0 ? (
-					<PanelSectionRow>
-						<i>Loading...</i>
-					</PanelSectionRow>
-				) : null}
-				{newsItems.map((news) => (
+				)}
+				{newsItems?.map((news) => (
 					<PanelSectionRow key={news.id}>
 						<ButtonItem
 							layout="below"
