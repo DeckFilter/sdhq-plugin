@@ -1,24 +1,17 @@
-import { callable } from "@decky/api";
+import { call } from "@decky/api";
 
-import { GameReview, NewsItem } from "./sdhq-types";
-import type { RequestErrors } from "./load-data";
+import type { GameReview, NewsItem } from "./sdhq-types";
 
-const getNewsCall = callable<[], NewsItem[]>("get_news");
-const getLatestReviewsCall = callable<[], GameReview[]>("get_latest_reviews");
-const getReviewForAppCall = callable<[appId: string], GameReview | null>(
-  "get_review_for_app",
-);
-const getStoreAppIdCall = callable<[], string | null>("get_store_app_id");
-const getLastRequestErrorsCall =
-  callable<[], RequestErrors>("get_last_request_errors");
+type RequestResult<T> = { data: T } | { error: string };
 
-export const getNews = async () => getNewsCall();
+async function request<T>(method: string, ...args: string[]): Promise<T> {
+  const result = await call<string[], RequestResult<T>>(method, ...args);
+  if ("error" in result) throw new Error(result.error);
+  return result.data;
+}
 
-export const getReviewForApp = async (appId: number | string) =>
-  getReviewForAppCall(appId.toString());
-
-export const getLatestReviews = async () => getLatestReviewsCall();
-
-export const getStoreAppId = async () => getStoreAppIdCall();
-
-export const getLastRequestErrors = async () => getLastRequestErrorsCall();
+export const getNews = () => request<NewsItem[]>("get_news");
+export const getLatestReviews = () => request<GameReview[]>("get_latest_reviews");
+export const getStoreAppId = () => request<string | null>("get_store_app_id");
+export const getReviewForApp = (appId: number | string) =>
+  request<GameReview | null>("get_review_for_app", String(appId));

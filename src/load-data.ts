@@ -1,96 +1,40 @@
+import { useEffect, useState } from "react";
+
+import { getCurrentAppId } from "./helpers";
+import { getLatestReviews, getNews, getReviewForApp } from "./requests";
 import type { GameReview, NewsItem } from "./sdhq-types";
 
-export type RequestErrors = Partial<
-  Record<"latest_reviews" | "news" | "review_for_app" | "store_app_id", string>
->;
+type RequestState<T> = { data?: T; error?: string };
 
-type HomeLoadDeps = {
-  getCurrentAppId: () => Promise<string | null>;
-  getNews: () => Promise<NewsItem[]>;
-  getLatestReviews: () => Promise<GameReview[]>;
-  getLastRequestErrors: () => Promise<RequestErrors>;
-};
+export function useHomeData() {
+  const [news, setNews] = useState<RequestState<NewsItem[]>>({});
+  const [latestReviews, setLatestReviews] = useState<RequestState<GameReview[]>>({});
+  const [currentApp, setCurrentApp] = useState<RequestState<string | null>>({});
+  const [gameReview, setGameReview] = useState<RequestState<GameReview | null>>({});
 
-type ReviewLoadDeps = {
-  getReviewForApp: (appId: string) => Promise<GameReview | null>;
-  getLastRequestErrors: () => Promise<RequestErrors>;
-};
+  useEffect(() => {
+    let disposed = false;
 
-export type HomeData = {
-  currentAppError: string | null;
-  currentAppId: string | null;
-  latestReviews: GameReview[];
-  latestReviewsError: string | null;
-  newsError: string | null;
-  newsItems: NewsItem[];
-};
+    async function load<T>(request: () => Promise<T>, publish: (state: RequestState<T>) => void) {
+      let state: RequestState<T>;
+      try {
+        state = { data: await request() };
+      } catch (error) {
+        state = { error: error instanceof Error ? error.message || error.name : String(error) };
+      }
+      if (!disposed) publish(state);
+    }
 
-export type ReviewData = {
-  review: GameReview | null;
-  reviewError: string | null;
-};
+    void load(getNews, setNews);
+    void load(getLatestReviews, setLatestReviews);
+    void load(getCurrentAppId, result => {
+      setCurrentApp(result);
+      const appId = result.data;
+      if (appId) void load(() => getReviewForApp(appId), setGameReview);
+    });
 
-const formatError = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+    return () => { disposed = true; };
+  }, []);
 
-export const loadHomeData = async ({
-  getCurrentAppId,
-  getNews,
-  getLatestReviews,
-  getLastRequestErrors,
-}: HomeLoadDeps): Promise<HomeData> => {
-  const [appIdResult, newsResult, reviewsResult] = await Promise.allSettled([
-    getCurrentAppId(),
-    getNews(),
-    getLatestReviews(),
-  ]);
-  const requestErrors: RequestErrors = await getLastRequestErrors().catch(
-    () => ({} as RequestErrors),
-  );
-
-  const currentAppId = appIdResult.status === "fulfilled" ? appIdResult.value : null;
-
-  return {
-    currentAppError:
-      appIdResult.status === "rejected"
-        ? formatError(appIdResult.reason)
-        : currentAppId === null
-          ? requestErrors.store_app_id ?? null
-          : null,
-    currentAppId,
-    latestReviews:
-      reviewsResult.status === "fulfilled" ? reviewsResult.value : [],
-    latestReviewsError:
-      reviewsResult.status === "rejected"
-        ? formatError(reviewsResult.reason)
-        : requestErrors.latest_reviews ?? null,
-    newsError:
-      newsResult.status === "rejected"
-        ? formatError(newsResult.reason)
-        : requestErrors.news ?? null,
-    newsItems: newsResult.status === "fulfilled" ? newsResult.value : [],
-  };
-};
-
-export const loadReviewData = async (
-  appId: string,
-  { getReviewForApp, getLastRequestErrors }: ReviewLoadDeps,
-): Promise<ReviewData> => {
-  const reviewResult = await getReviewForApp(appId)
-    .then((review) => ({ review, status: "fulfilled" as const }))
-    .catch((error: unknown) => ({
-      error,
-      status: "rejected" as const,
-    }));
-  const requestErrors: RequestErrors = await getLastRequestErrors().catch(
-    () => ({} as RequestErrors),
-  );
-
-  return {
-    review: reviewResult.status === "fulfilled" ? reviewResult.review : null,
-    reviewError:
-      reviewResult.status === "rejected"
-        ? formatError(reviewResult.error)
-        : requestErrors.review_for_app ?? null,
-  };
-};
+  return { news, latestReviews, currentApp, gameReview };
+}
