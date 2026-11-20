@@ -16,7 +16,7 @@ importers:
         version: 4.16.5
       html-react-parser:
         specifier: ^5.2.17
-        version: 5.2.17(@types/react@19.1.1)(react@19.2.4)
+        version: 5.2.17(@types/react@19.3.0)(react@19.2.4)
       react-icons:
         specifier: ^5.7.0
         version: 5.7.0(react@19.2.4)
@@ -28,11 +28,11 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@types/react':
-        specifier: 19.1.1
-        version: 19.1.1
+        specifier: 19.3.0
+        version: 19.3.0
       '@types/react-dom':
         specifier: 19.1.1
-        version: 19.1.1(@types/react@19.1.1)
+        version: 19.1.1(@types/react@19.3.0)
       '@types/react-router':
         specifier: ^5.1.20
         version: 5.1.20
@@ -323,8 +323,8 @@ packages:
   '@types/react-router@5.1.20':
     resolution: {integrity: sha512-jGjmu/ZqS7FjSH6owMcD5qpq19+1RS9DeVRqfl1FeBMxTDQAGwlMWOcs52NDoXaNKyG3d1cYQFMs9rCrb88o9Q==}
 
-  '@types/react@19.1.1':
-    resolution: {integrity: sha512-ePapxDL7qrgqSF67s0h9m412d9DbXyC1n59O2st+9rjuuamWsZuD2w55rqY12CbzsZ7uVXb5Nw0gEp9Z8MMutQ==}
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -1238,16 +1238,16 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
-  '@types/react-dom@19.1.1(@types/react@19.1.1)':
+  '@types/react-dom@19.1.1(@types/react@19.3.0)':
     dependencies:
-      '@types/react': 19.1.1
+      '@types/react': 19.3.0
 
   '@types/react-router@5.1.20':
     dependencies:
       '@types/history': 4.7.11
-      '@types/react': 19.1.1
+      '@types/react': 19.3.0
 
-  '@types/react@19.1.1':
+  '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
 
@@ -1593,7 +1593,7 @@ snapshots:
       domhandler: 5.0.3
       htmlparser2: 10.1.0
 
-  html-react-parser@5.2.17(@types/react@19.1.1)(react@19.2.4):
+  html-react-parser@5.2.17(@types/react@19.3.0)(react@19.2.4):
     dependencies:
       domhandler: 5.0.3
       html-dom-parser: 5.1.8
@@ -1601,7 +1601,7 @@ snapshots:
       react-property: 2.0.2
       style-to-js: 1.1.21
     optionalDependencies:
-      '@types/react': 19.1.1
+      '@types/react': 19.3.0
 
   htmlparser2@10.1.0:
     dependencies:
