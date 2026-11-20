@@ -80,6 +80,7 @@ export const ReviewPage = ({ review, setPage }: ReviewPageProps) => {
 	const profiles = getSteamDeckProfiles(review.acf)
 	return (
 		<Focusable
+			autoFocus
 			flow-children="column"
 			onCancelButton={event => {
 				event.stopPropagation()

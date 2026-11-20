@@ -1,5 +1,6 @@
 import {
 	ButtonItem,
+	Focusable,
 	Navigation,
 	PanelSection,
 	PanelSectionRow
@@ -8,6 +9,8 @@ import {
 import badge from "../../assets/bestOnDeck-badge.png"
 import { SteamDeckHQLogo } from "../components/SteamDeckHQLogo"
 import { GameReview, NewsItem } from "../sdhq-types"
+
+const retainFocus = { focusableIfEmpty: true }
 
 type HomePageProps = {
 	appError: string | null
@@ -31,9 +34,9 @@ export const HomePage = ({
 	newsItems,
 	setPage,
 	reviewItems,
-}: HomePageProps) => (
-	<>
-		<>
+}: HomePageProps) => {
+	return (
+		<Focusable autoFocus flow-children="column" {...retainFocus}>
 			{appIsActive ? (
 				<PanelSection
 					title={
@@ -41,37 +44,39 @@ export const HomePage = ({
 					}
 				>
 					<PanelSectionRow>
-						{appError ? (
-							<span>Failed to resolve the current game: {appError}</span>
-						) : !review ? (
-							<span>
-								{reviewError
-									? `Failed to load the current game review: ${reviewError}`
-									: review === null
-										? "No SDHQ Review For Current Game"
-										: "Loading..."}
-							</span>
-						) : (
-							<ButtonItem
-								layout="below"
-								onClick={() => setPage("review")}
-							>
-								See Recommended Settings
-								{review.acf?.best_on_deck ? (
-									<img
-										style={{
-											position: "absolute",
-											right: "-10px",
-											height: "25px",
-											width: "25px",
-											top: "-10px",
-											rotate: "-30deg",
-										}}
-										src={badge}
-									/>
-								) : null}
-							</ButtonItem>
-						)}
+						<Focusable {...retainFocus}>
+							{appError ? (
+								<span>Failed to resolve the current game: {appError}</span>
+							) : !review ? (
+								<span>
+									{reviewError
+										? `Failed to load the current game review: ${reviewError}`
+										: review === null
+											? "No SDHQ Review For Current Game"
+											: "Loading..."}
+								</span>
+							) : (
+								<ButtonItem
+									layout="below"
+									onClick={() => setPage("review")}
+								>
+									See Recommended Settings
+									{review.acf?.best_on_deck ? (
+										<img
+											style={{
+												position: "absolute",
+												right: "-10px",
+												height: "25px",
+												width: "25px",
+												top: "-10px",
+												rotate: "-30deg",
+											}}
+											src={badge}
+										/>
+									) : null}
+								</ButtonItem>
+							)}
+						</Focusable>
 					</PanelSectionRow>
 				</PanelSection>
 			) : null}
@@ -166,7 +171,7 @@ export const HomePage = ({
 					</ButtonItem>
 				</PanelSectionRow>
 			</PanelSection>
-		</>
-	</>
-)
+		</Focusable>
+	)
+}
 export default HomePage
