@@ -57,7 +57,7 @@ export const HomePage = ({
 								onClick={() => setPage("review")}
 							>
 								See Recommended Settings
-								{review.acf.best_on_deck ? (
+								{review.acf?.best_on_deck ? (
 									<img
 										style={{
 											position: "absolute",
