@@ -5,6 +5,16 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
   push:
     branches:
       - 'main'
@@ -14,8 +24,19 @@ on:
 jobs:
   build_plugin:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
+      - name: Require the default branch for a version bump
+        if: github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+        run: |
+          echo "::error::Run Release from the default branch to bump the plugin version."
+          exit 1
+
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -25,6 +46,32 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Prepare release version
+        id: version
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        env:
+          VERSION_BUMP: ${{ inputs.bump }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            case "$VERSION_BUMP" in
+              patch|minor|major) ;;
+              *) echo "::error::Choose patch, minor, or major."; exit 1 ;;
+            esac
+            npm version "$VERSION_BUMP" --no-git-tag-version --ignore-scripts --package-lock=false
+          fi
+
+          tag="v$(node -p "require('./package.json').version")"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            if git show-ref --verify --quiet "refs/tags/$tag"; then
+              echo "::error::Tag $tag already exists. Check the version in package.json before releasing."
+              exit 1
+            fi
+          elif [[ "$GITHUB_REF_NAME" != "$tag" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the package.json version ($tag). Use Run workflow to bump and tag together."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -59,12 +106,26 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sdhq-plugin-release
+          if-no-files-found: error
           path: |
             sdhq-plugin.tar.gz
             sdhq-plugin.zip
 
+      - name: Commit and tag the packaged version
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): $RELEASE_TAG"
+          git tag "$RELEASE_TAG"
+          git push --atomic origin "HEAD:refs/heads/$RELEASE_BRANCH" "refs/tags/$RELEASE_TAG"
+
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     needs: build_plugin
     steps:
@@ -80,9 +141,9 @@ jobs:
           files: |
             /tmp/sdhq-plugin-release/sdhq-plugin.tar.gz
             /tmp/sdhq-plugin-release/sdhq-plugin.zip
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.build_plugin.outputs.tag }}
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'pre') || contains(github.ref_name, '.rc') }}
+          prerelease: ${{ contains(needs.build_plugin.outputs.tag, 'pre') || contains(needs.build_plugin.outputs.tag, '.rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
