@@ -28,7 +28,7 @@
   "homepage": "https://github.com/DeckFilter/sdhq-plugin#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
-    "@types/react": "19.1.1",
+    "@types/react": "19.3.0",
     "@types/react-dom": "19.1.1",
     "@types/react-router": "^5.1.20",
     "@types/webpack": "^5.28.5",
