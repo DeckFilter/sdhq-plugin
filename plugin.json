@@ -1,11 +1,11 @@
 {
 	"name": "Steam Deck HQ",
-	"author": "davocarli, felixhirschfeld",
+	"author": "DeckFilter",
 	"flags": [],
 	"api_version": 1,
 	"publish": {
 		"tags": ["sdhq"],
 		"description": "Official plugin from Steam Deck HQ. Allows you to browse game reviews and recommended settings.",
-		"image": "https://github.com/davocarli/sdhq-plugin/blob/main/assets/main-screenshot.jpg?raw=true"
+		"image": "https://github.com/DeckFilter/sdhq-plugin/blob/main/assets/main-screenshot.jpg?raw=true"
 	}
 }

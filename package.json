@@ -20,7 +20,7 @@
     "steam-deck",
     "deck"
   ],
-  "author": "davocarli, felixhirschfeld",
+  "author": "DeckFilter",
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/DeckFilter/sdhq-plugin/issues"
